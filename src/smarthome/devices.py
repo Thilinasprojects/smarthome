@@ -35,6 +35,13 @@ class Light:
     def turn_off(self) -> None:
         self._is_on = False
 
+    def toggle(self) -> None:
+        # toggle is a button that switches the light to whhatever is isn't: off becomes on, on becomes off.
+        if self._is_on:
+            return self.turn_off()
+        else:
+            return self.turn_on()
+
     @property
     def brightness(self) -> int:
         return self._brightness
