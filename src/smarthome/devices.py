@@ -54,3 +54,20 @@ class Light:
         if not self._is_on:
             return 0.0
         return self.watts * self._brightness / 100
+
+    @property
+    def energy_kwh(self) -> float:
+        """Total energy used so far, in kilowatt-hours (what the bill counts)."""
+        return self._energy_kwh
+
+    def run(self, hours: float) -> None:
+        """Let time pass: add this period's energy to the meter."""
+        if hours < 0:
+            raise InvalidSetting(f"hours can't be negative, got{hours!r}")
+        # watts x hours = watt-hours; divide by 1000 for kilowatt-hours
+        self._energy_kwh += self.power_draw * hours / 1000
+
+    def __repr__(self) -> str:
+        # what Python shows when you print the object or look at it in the REPL.
+        state = "on" if self._is_on else "off"
+        return f"Light({self.name!r}, {state}, {self._brightness}%)"
