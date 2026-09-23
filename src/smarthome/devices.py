@@ -34,3 +34,23 @@ class Light:
 
     def turn_off(self) -> None:
         self._is_on = False
+
+    @property
+    def brightness(self) -> int:
+        return self._brightness
+
+    @brightness.setter
+    def brightness(self, value: int) -> None:
+        # The setter runs when someone writes 'Light.brightness = 40'.
+        # Check first, change after: a refused value leaves the light untouched.
+        if not 0 <= value <= 100:
+            raise InvalidSetting(f"brightness must be 0-100%, got {value!r}")
+        self._brightness = value
+
+    @property
+    def power_draw(self) -> float:
+        """Watts being used right now"""
+        # worked out fresh every time it's read, so it can be out of date.
+        if not self._is_on:
+            return 0.0
+        return self.watts * self._brightness / 100
