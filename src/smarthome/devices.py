@@ -3,30 +3,27 @@
 Type the Light class from GUIDE_DAY1.md over the stub below, one chunk at a time.
 """
 
+from abc import ABC, abstractmethod
 from smarthome.errors import InvalidSetting
 
 
-class Light:
-    """A dimmable light."""
+class Device(ABC):
+    """Anything in the home that can be switched on and draws power.
+
+    Abstract: you can't create a plain Device, only a kind of device.
+    """
 
     def __init__(self, name: str, watts: float = 10.0):
-        # __init__ runs once, when you write Light("ceiling").
-        # It's job: set the new object up in a valid starting state, or refuse to create it at all.
         if watts <= 0:
             raise InvalidSetting(f"watts must be > 0, got {watts!r}")
-
-        self.name = name  # public: anyone may read or rename it
-        self.watts = watts  # the rated power on the box
-
-        # Leading underscore = private: only the Light's own methods change these.
+        self.name = name
+        self.watts = watts
         self._is_on = False
-        self._brightness = 100  # percent
-        self._energy_kwh = 0.0  # the meter
+        self._energy_kwh = 0.0
 
+    # ---- switching: shhared by every device
     @property
     def is_on(self) -> bool:
-        # A property with no setter: 'Light.is_on' reads it, 'light.is_on = True' is refused. The only
-        # way to switch is through the methods below.
         return self._is_on
 
     def turn_on(self) -> None:
@@ -36,11 +33,41 @@ class Light:
         self._is_on = False
 
     def toggle(self) -> None:
-        # toggle is a button that switches the light to whhatever is isn't: off becomes on, on becomes off.
         if self._is_on:
-            return self.turn_off()
+            self.turn_off()
         else:
-            return self.turn_on()
+            self.turn_on()
+
+    # ---- energy: shared by every device
+    @property
+    def energy_kwh(self) -> float:
+        return self._energy_kwh
+
+    def run(self, hours: float) -> None:
+        if hours < 0:
+            raise InvalidSetting(f"hours can't be negative, got {hours!r}")
+        self._energy_kwh += self.power_draw * hours / 1000
+
+    # ---- what each kind of device must provide for itself
+    @property
+    @abstractmethod
+    def power_draw(self) -> float:
+        """Watts being used right now"""
+
+    def status(self) -> str:
+        """The devices own setting, short, e.g. '40%' or 'speed 2'."""
+
+    def __repr__(self) -> str:
+        state = "on" if self._is_on else "off"
+        return f"{type(self).__name__}({self.name!r}, {state}, {self.status()})"
+
+
+class Light(Device):
+    """A dimmable light."""
+
+    def __init__(self, name: str, watts: float = 10.0):
+        super().__init__(name, watts)
+        self._brightness = 100
 
     @property
     def brightness(self) -> int:
@@ -62,53 +89,18 @@ class Light:
             return 0.0
         return self.watts * self._brightness / 100
 
-    @property
-    def energy_kwh(self) -> float:
-        """Total energy used so far, in kilowatt-hours (what the bill counts)."""
-        return self._energy_kwh
-
-    def run(self, hours: float) -> None:
-        """Let time pass: add this period's energy to the meter."""
-        if hours < 0:
-            raise InvalidSetting(f"hours can't be negative, got{hours!r}")
-        # watts x hours = watt-hours; divide by 1000 for kilowatt-hours
-        self._energy_kwh += self.power_draw * hours / 1000
-
-    def __repr__(self) -> str:
-        # what Python shows when you print the object or look at it in the REPL.
-        state = "on" if self._is_on else "off"
-        return f"Light({self.name!r}, {state}, {self._brightness}%)"
+    def status(self) -> str:
+        return f"{self._brightness}%"
 
 
-class Fan:
+class Fan(Device):
     """A fan with speed 1 to 3."""
 
     MAX_SPEED = 3  # a class attribute: the same for every fan.
 
     def __init__(self, name: str, watts: float = 40.0):
-        if watts <= 0:
-            raise InvalidSetting(f"watts must be > 0, got {watts!r}")
-        self.name = name
-        self.watts = watts
-        self._is_on = False
+        super().__init__(name, watts)
         self._speed = 1
-        self._energy_kwh = 0.0
-
-    @property
-    def is_on(self) -> bool:
-        return self._is_on
-
-    def turn_on(self) -> None:
-        self._is_on = True
-
-    def turn_off(self) -> None:
-        self._is_on = False
-
-    def toggle(self) -> None:
-        if self._is_on:
-            self.turn_off()
-        else:
-            self.turn_on()
 
     @property
     def speed(self) -> int:
@@ -126,15 +118,5 @@ class Fan:
             return 0.0
         return self.watts * self._speed / self.MAX_SPEED
 
-    @property
-    def energy_kwh(self) -> float:
-        return self._energy_kwh
-
-    def run(self, hours: float) -> None:
-        if hours < 0:
-            raise InvalidSetting(f"hours can't be negative, got {hours!r}")
-        self._energy_kwh += self.power_draw * hours / 1000
-
-    def __repr__(self) -> str:
-        state = "on" if self._is_on else "off"
-        return f"Fan({self.name!r}, {state}, speed {self._speed})"
+    def status(self) -> str:
+        return f"speed {self._speed}"
