@@ -13,6 +13,8 @@ class Device(ABC):
     Abstract: you can't create a plain Device, only a kind of device.
     """
 
+    kind = "device"
+
     def __init__(self, name: str, watts: float = 10.0):
         if watts <= 0:
             raise InvalidSetting(f"watts must be > 0, got {watts!r}")
@@ -65,6 +67,8 @@ class Device(ABC):
 class Light(Device):
     """A dimmable light."""
 
+    kind = "light"
+
     def __init__(self, name: str, watts: float = 10.0):
         super().__init__(name, watts)
         self._brightness = 100
@@ -96,6 +100,7 @@ class Light(Device):
 class Fan(Device):
     """A fan with speed 1 to 3."""
 
+    kind = "fan"
     MAX_SPEED = 3  # a class attribute: the same for every fan.
 
     def __init__(self, name: str, watts: float = 40.0):
@@ -120,3 +125,35 @@ class Fan(Device):
 
     def status(self) -> str:
         return f"speed {self._speed}"
+
+
+class Thermostat(Device):
+    """This is a thermostat."""
+
+    kind = "thermostat"
+    MIN_TEMP = 5.0
+    MAX_TEMP = 30.0
+
+    def __init__(self, name: str, watts: float = 1500.0, target: float = 20.0):
+        super().__init__(name, watts)
+        self._target = 20.0
+        self.target = target
+
+    @property
+    def target(self) -> float:
+        return self._target
+
+    @target.setter
+    def target(self, value: float) -> None:
+        if not self.MIN_TEMP <= value <= self.MAX_TEMP:
+            raise InvalidSetting(f"Target must be 5-30 °C, got {value!r}")
+        self._target = value
+
+    @property
+    def power_draw(self) -> float:
+        if not self._is_on:
+            return 0.0
+        return self.watts
+
+    def status(self) -> str:
+        return f"{self._target:.1f} °C"
