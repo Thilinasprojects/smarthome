@@ -84,5 +84,18 @@ class Home:
     def power_draw(self) -> float:
         return sum(room.power_draw for room in self._rooms.values())
 
+    # ---- the text report
+    def report(self) -> str:
+        lines = [f"{self.name} - total draw {self.power_draw:,.1f} W"]
+        for room in self._rooms.values():
+            lines.append(f"  {room.name}")
+            for d in room:
+                state = "ON" if d.is_on else "OFF"
+                lines.append(
+                    f"    {d.name < 12} {type(d).__name__:<11} {state:<4} "
+                    f"{d.status():<10} {d.power_draw:>7.1f} W"
+                )
+        return "\n".join(lines)
+
     def __repr__(self) -> str:
         return f"Home({self.name!r}, {len(self._rooms)} rooms)"
