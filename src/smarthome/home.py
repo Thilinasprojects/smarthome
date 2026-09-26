@@ -1,7 +1,7 @@
 """Rooms and the Home: containers that hold devices."""
 
 from smarthome.devices import Device
-from smarthome.errors import DeviceNotFound, DuplicateDevice
+from smarthome.errors import DeviceNotFound, DuplicateDevice, DuplicateRoom
 
 
 class Room:
@@ -16,6 +16,14 @@ class Room:
             raise DuplicateDevice(f"{self.name} already has a device called {device.name!r}")
         self._devices[device.name] = device
         return device  # So you can write: lamp = room.add(Light("lamp"))
+
+    def all_off(self) -> None:
+        for device in self:
+            device.turn_off()
+
+    @property
+    def power_draw(self) -> float:
+        return sum(device.power_draw for device in self)
 
     # ---- dunder methods: make a Room behave like a built-in container.
     def __getitem__(self, name: str) -> Device:
@@ -38,4 +46,43 @@ class Room:
 
 
 class Home:
-    pass  # Chunk 2: replace this class, see GUIDE_DAY3.md
+    """The whole home: rooms, and everything in them."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self._rooms: dict[str, Room] = {}
+
+    # ---- rooms
+    def add_room(self, name: str) -> Room:
+        if name in self._rooms:
+            raise DuplicateRoom(f"{self.name} already has a room called {name!r}")
+        room = Room(name)
+        self._rooms[name] = room
+        return room
+
+    @property
+    def rooms(self) -> tuple[Room, ...]:
+        return tuple(self._rooms.values())
+
+    def __getitem__(self, name: str) -> Room:
+        try:
+            return self._rooms[name]
+        except KeyError:
+            raise DeviceNotFound(f"no room called {name!r}") from None
+
+    # ---- all devices, everywhere
+    def devices(self):
+        """Yield every device in every room, one at a time."""
+        for room in self._rooms.values():
+            yield from room
+
+    def all_off(self) -> None:
+        for room in self._rooms.values():
+            room.all_off()
+
+    @property
+    def power_draw(self) -> float:
+        return sum(room.power_draw for room in self._rooms.values())
+
+    def __repr__(self) -> str:
+        return f"Home({self.name!r}, {len(self._rooms)} rooms)"

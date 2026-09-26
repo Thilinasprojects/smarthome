@@ -18,3 +18,7 @@ class DeviceNotFound(SmartHomeError):
 
 class DuplicateDevice(SmartHomeError):
     """Tried to add a second device with the same name to a room."""
+
+
+class DuplicateRoom(SmartHomeError):
+    """Tried to add a second room with the same name to a home."""
