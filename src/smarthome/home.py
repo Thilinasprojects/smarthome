@@ -17,6 +17,11 @@ class Room:
         self._devices[device.name] = device
         return device  # So you can write: lamp = room.add(Light("lamp"))
 
+    def remove(self, name) -> Device:
+        if name not in self._devices:
+            raise DeviceNotFound(f"no device {name!r} in {self.name}.")
+        return self._devices.pop(name)
+
     def all_off(self) -> None:
         for device in self:
             device.turn_off()
@@ -63,6 +68,9 @@ class Home:
     @property
     def rooms(self) -> tuple[Room, ...]:
         return tuple(self._rooms.values())
+
+    def find(self, room_name: str, device_name: str):
+        return self.__getitem__(room_name).__getitem__(device_name)
 
     def __getitem__(self, name: str) -> Room:
         try:
